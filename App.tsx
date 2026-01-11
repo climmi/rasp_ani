@@ -54,7 +54,7 @@ const App: React.FC = () => {
       
       // Simulation: Jedes Signal (Leertaste) steht für ESP32 LED = HIGH
       if (e.key === ' ' || e.code === 'Space' || e.key === 'Enter') {
-        setLastInput('ESP32 SIGNAL: HIGH');
+        setLastInput('SIGNAL: HIGH');
         e.preventDefault();
         triggerAnimation();
       } else {
@@ -78,35 +78,35 @@ const App: React.FC = () => {
       <div className="fixed top-8 left-8 z-[100] font-mono">
         <div className="bg-black/80 backdrop-blur-xl p-6 border border-white/10 rounded-2xl shadow-2xl">
           <div className="flex items-center gap-4 mb-4">
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${isTriggered ? 'bg-amber-400 shadow-[0_0_20px_#fbbf24]' : 'bg-zinc-800'}`} />
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${isTriggered ? 'bg-blue-400 shadow-[0_0_20px_#60a5fa]' : 'bg-zinc-800'}`} />
             <div className="flex flex-col">
-              <span className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Hardware Bridge</span>
-              <span className={`text-[11px] font-bold ${isTriggered ? 'text-amber-400' : 'text-zinc-400'}`}>
-                {isTriggered ? 'LED VOLTAGE DETECTED' : 'WAITING FOR ESP32...'}
+              <span className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Input Link</span>
+              <span className={`text-[11px] font-bold ${isTriggered ? 'text-blue-400' : 'text-zinc-400'}`}>
+                {isTriggered ? 'LED SIGNAL DETECTED' : 'AWAITING ESP32...'}
               </span>
             </div>
           </div>
           
           <div className="space-y-1 py-3 border-t border-white/5">
              <div className="flex justify-between text-[9px]">
-                <span className="text-zinc-600">LOGIK:</span>
-                <span className="text-blue-500 font-bold uppercase tracking-tighter">Pull-Down (Active High)</span>
+                <span className="text-zinc-600">PIN CONFIG:</span>
+                <span className="text-blue-500 font-bold uppercase tracking-tighter">Pull-Down</span>
              </div>
              <div className="flex justify-between text-[9px]">
-                <span className="text-zinc-600">STATUS:</span>
-                <span className="text-zinc-400 uppercase tracking-tighter">{lastInput}</span>
+                <span className="text-zinc-600">TRIGGER:</span>
+                <span className="text-zinc-400 uppercase tracking-tighter">Rising Edge</span>
              </div>
           </div>
           
           {isTriggered && (
             <div className="mt-2 pt-3 border-t border-white/5">
-              <div className="flex justify-between text-[10px] text-amber-200/50 font-black mb-2 tabular-nums">
-                <span>SEQUENCE</span>
+              <div className="flex justify-between text-[10px] text-blue-200/50 font-black mb-2 tabular-nums">
+                <span>ACTIVE</span>
                 <span>{timeLeft.toFixed(2)}s</span>
               </div>
               <div className="w-44 bg-zinc-900 h-1 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-amber-500 shadow-[0_0_15px_#f59e0b] transition-all duration-75 ease-linear"
+                  className="h-full bg-blue-500 shadow-[0_0_15px_#3b82f6] transition-all duration-75 ease-linear"
                   style={{ width: `${(timeLeft / (DURATION_MS/1000)) * 100}%` }}
                 />
               </div>
@@ -129,9 +129,9 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Footer / Dev Info */}
+      {/* Footer */}
       <div className="fixed bottom-8 text-[8px] text-zinc-800 font-mono font-bold tracking-[0.4em] uppercase text-center w-full pointer-events-none">
-        Trigger: GPIO High (3.3V) via ESP32 Coupling
+        Mode: Active High Input
       </div>
     </div>
   );
