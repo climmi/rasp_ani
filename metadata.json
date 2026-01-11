@@ -1,0 +1,5 @@
+{
+  "name": "Raspberry Pi Animation Controller",
+  "description": "A lightweight, hardware-triggerable React animation dashboard designed for Raspberry Pi. It features smooth SVG animations and logic for handling GPIO-like triggers (simulated or via WebSerial/API).",
+  "requestFramePermissions": []
+}
