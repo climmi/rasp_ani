@@ -7,7 +7,10 @@ const App: React.FC = () => {
   const [lastInput, setLastInput] = useState<string>('System Bereit');
   const [timeLeft, setTimeLeft] = useState<number>(0);
   
-  const DURATION_MS = 5000;
+  // HIER DIE DAUER ÄNDERN (in Millisekunden):
+  // 5000 = 5 Sek, 7000 = 7 Sek, 10000 = 10 Sek, etc.
+  const DURATION_MS = 7000; 
+  
   const timerRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<number | null>(null);
   const isRunningRef = useRef(false);
@@ -44,7 +47,7 @@ const App: React.FC = () => {
     timerRef.current = window.setTimeout(() => {
       stopAnimation();
     }, DURATION_MS);
-  }, [stopAnimation]);
+  }, [stopAnimation, DURATION_MS]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -113,7 +116,7 @@ const App: React.FC = () => {
 
       {/* Footer */}
       <div className="fixed bottom-8 text-[9px] text-zinc-800 font-mono font-bold tracking-[0.5em] uppercase pointer-events-none">
-        Wave Controller • 5s Sequence
+        Wave Controller • {(DURATION_MS/1000).toFixed(1)}s Sequence
       </div>
     </div>
   );
