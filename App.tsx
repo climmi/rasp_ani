@@ -4,15 +4,17 @@ import { AnimationOverlay } from './components/AnimationOverlay';
 
 const App: React.FC = () => {
   const [isTriggered, setIsTriggered] = useState(false);
-  const [lastInput, setLastInput] = useState<string>('Bereit');
+  const [lastInput, setLastInput] = useState<string>('System Bereit');
   const [timeLeft, setTimeLeft] = useState<number>(0);
   
-  const DURATION_SECONDS = 5;
+  const DURATION_MS = 5000;
   const timerRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<number | null>(null);
+  const isRunningRef = useRef(false);
 
   const stopAnimation = useCallback(() => {
     setIsTriggered(false);
+    isRunningRef.current = false;
     setTimeLeft(0);
     if (timerRef.current) window.clearTimeout(timerRef.current);
     if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
@@ -21,33 +23,39 @@ const App: React.FC = () => {
   }, []);
 
   const triggerAnimation = useCallback(() => {
-    // Wenn bereits aktiv, ignorieren wir weitere Trigger für die Dauer der Animation
-    if (isTriggered) return;
+    // Wenn die Animation bereits läuft, ignorieren wir JEDEN weiteren Input
+    if (isRunningRef.current) return;
     
+    isRunningRef.current = true;
     setIsTriggered(true);
-    setTimeLeft(DURATION_SECONDS);
+    setTimeLeft(DURATION_MS / 1000);
 
     const startTime = Date.now();
     
-    // Countdown für die Anzeige
+    // Countdown für das UI (alle 50ms)
     countdownIntervalRef.current = window.setInterval(() => {
-      const elapsed = (Date.now() - startTime) / 1000;
-      const remaining = Math.max(0, DURATION_SECONDS - elapsed);
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, (DURATION_MS - elapsed) / 1000);
       setTimeLeft(remaining);
+      
+      if (remaining <= 0) {
+        if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
+      }
     }, 50);
 
-    // Sicherer Timeout zum Beenden
+    // Der garantierte Timeout für das Ende nach 5 Sekunden
     timerRef.current = window.setTimeout(() => {
       stopAnimation();
-    }, DURATION_SECONDS * 1000);
-  }, [isTriggered, stopAnimation]);
+    }, DURATION_MS);
+  }, [stopAnimation]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Wir loggen den Input, um zu sehen ob das Python-Skript feuert
-      if (e.repeat) return; // Ignoriere gedrückt gehaltene Tasten
+      // Wichtig: Verhindert Mehrfachtrigger durch gedrückt halten
+      if (e.repeat) return; 
       
-      setLastInput(`Taste: ${e.key === ' ' ? 'Leertaste' : e.key}`);
+      const inputLabel = e.key === ' ' ? 'Leertaste' : e.key;
+      setLastInput(`Taste: ${inputLabel}`);
       
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
@@ -64,31 +72,31 @@ const App: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen w-full bg-black flex flex-col items-center justify-center overflow-hidden cursor-none"
+      className="min-h-screen w-full bg-black flex flex-col items-center justify-center overflow-hidden cursor-none select-none"
       onClick={triggerAnimation}
     >
-      {/* Status-Monitor */}
-      <div className="fixed top-6 left-6 z-[100] font-mono">
-        <div className="bg-black/60 backdrop-blur-xl p-4 border border-blue-900/30 rounded-xl shadow-2xl">
-          <div className="flex items-center gap-3 mb-2">
-            <div className={`w-3 h-3 rounded-full shadow-[0_0_10px] ${isTriggered ? 'bg-blue-400 shadow-blue-500 animate-pulse' : 'bg-slate-600 shadow-transparent'}`} />
-            <span className={`text-sm font-bold tracking-tighter ${isTriggered ? 'text-blue-400' : 'text-slate-500'}`}>
-              {isTriggered ? 'SYSTEM_ACTIVE' : 'SYSTEM_IDLE'}
+      {/* Status & Timer */}
+      <div className="fixed top-8 left-8 z-[100] font-mono">
+        <div className="bg-black/80 backdrop-blur-xl p-5 border border-blue-500/20 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-4 mb-3">
+            <div className={`w-4 h-4 rounded-full transition-all duration-300 ${isTriggered ? 'bg-blue-400 shadow-[0_0_15px_#60a5fa] animate-pulse' : 'bg-zinc-800'}`} />
+            <span className={`text-xs font-black tracking-widest uppercase ${isTriggered ? 'text-blue-400' : 'text-zinc-600'}`}>
+              {isTriggered ? 'Animation Aktiv' : 'Warte auf Input'}
             </span>
           </div>
           
-          <div className="text-[10px] text-slate-500 mb-4">LOG: {lastInput}</div>
+          <div className="text-[10px] text-zinc-500 font-medium mb-4">Letzter Input: {lastInput}</div>
           
           {isTriggered && (
-            <div className="w-48">
-              <div className="flex justify-between text-[10px] text-blue-300/80 mb-2 font-bold tracking-widest">
+            <div className="w-56">
+              <div className="flex justify-between text-[11px] text-blue-300 font-bold mb-2 tabular-nums">
                 <span>REMAINING</span>
-                <span>{timeLeft.toFixed(1)}S</span>
+                <span>{timeLeft.toFixed(2)}s</span>
               </div>
-              <div className="w-full bg-blue-950/30 h-1 rounded-full overflow-hidden">
+              <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden p-[1px]">
                 <div 
-                  className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all duration-75 ease-linear"
-                  style={{ width: `${(timeLeft / DURATION_SECONDS) * 100}%` }}
+                  className="h-full bg-blue-500 transition-all duration-75 ease-linear rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+                  style={{ width: `${(timeLeft / (DURATION_MS/1000)) * 100}%` }}
                 />
               </div>
             </div>
@@ -96,25 +104,23 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Die neue sanfte Animation */}
+      {/* Animation Layer */}
       <AnimationOverlay isActive={isTriggered} />
 
-      {/* Standby UI */}
+      {/* Zentrierter Standby-Indikator */}
       {!isTriggered && (
-        <div className="flex flex-col items-center gap-6 opacity-40">
-          <div className="w-16 h-16 border border-blue-900/20 rounded-full flex items-center justify-center relative">
-            <div className="absolute inset-0 border border-blue-500/10 rounded-full animate-ping" />
-            <div className="w-2 h-2 bg-blue-900 rounded-full" />
-          </div>
-          <div className="text-[10px] text-blue-900 font-mono tracking-[0.5em] uppercase">
-            Awaiting Command
+        <div className="relative group transition-all duration-500 scale-75 md:scale-100">
+          <div className="absolute inset-0 bg-blue-500/5 blur-[100px] rounded-full" />
+          <div className="w-24 h-24 border border-blue-900/10 rounded-full flex items-center justify-center relative bg-black/40 backdrop-blur-sm">
+            <div className="absolute inset-0 border border-blue-500/20 rounded-full animate-[ping_3s_infinite]" />
+            <div className="w-3 h-3 bg-blue-950 rounded-full" />
           </div>
         </div>
       )}
 
-      {/* Info für User */}
-      <div className="fixed bottom-6 text-[9px] text-slate-800 font-mono uppercase tracking-[0.2em]">
-        RasPi Animation Controller v2.0
+      {/* Footer Branding */}
+      <div className="fixed bottom-8 text-[10px] text-zinc-800 font-mono font-bold tracking-[0.3em] uppercase">
+        Raspberry Pi • Animation Controller • 5.0s Lock
       </div>
     </div>
   );
