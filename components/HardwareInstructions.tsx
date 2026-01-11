@@ -23,12 +23,27 @@ export const HardwareInstructions: React.FC = () => {
           </div>
         </div>
 
+        <div className="bg-blue-900/20 border border-blue-500/30 p-3 rounded-lg">
+          <p className="text-blue-300 text-xs font-bold mb-1 uppercase">Aktueller Projektpfad:</p>
+          <code className="text-blue-400 font-mono text-xs">~/projects/animation-controller/rasp_ani/</code>
+        </div>
+
         <p className="text-slate-400 italic text-xs">
-          Verbinde den Knopf zwischen Pin 36 (GPIO 16) und Pin 34 (GND). Das Skript nutzt den internen Pull-Up-Widerstand.
+          1. Verbinde den Knopf zwischen Pin 36 (GPIO 16) und Pin 34 (GND).<br/>
+          2. Installiere die Abhängigkeiten im Terminal:
+        </p>
+
+        <div className="bg-slate-900 p-2 rounded font-mono text-[10px] text-slate-400 border border-slate-700">
+          sudo apt update && sudo apt install -y python3-rpi.gpio<br/>
+          pip install pynput --break-system-packages
+        </div>
+
+        <p className="text-slate-400 italic text-xs">
+          3. Erstelle und starte das Trigger-Skript im Ordner <code className="text-slate-200">rasp_ani/</code>:
         </p>
         
         <div className="bg-slate-950 p-3 rounded font-mono text-xs text-emerald-400 overflow-x-auto border border-emerald-900/30 shadow-inner">
-          <pre>{`# 1. Installation: pip install RPi.GPIO pynput
+          <pre>{`# trigger_button.py
 import RPi.GPIO as GPIO
 from pynput.keyboard import Key, Controller
 import time
@@ -39,15 +54,19 @@ PIN = 16 # GPIO 16 (Physical Pin 36)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-print("Warte auf Knopfdrück an GPIO 16...")
+print("--- Trigger aktiv ---")
+print("Warte auf Signal an GPIO 16...")
 
-while True:
-    if GPIO.input(PIN) == GPIO.LOW: # Knopf wurde gegen GND gedrückt
-        kb.press(Key.space)
-        kb.release(Key.space)
-        print("Knopf erkannt -> Animation getriggert")
-        time.sleep(5.5) # Sperre während der 5s Animation
-    time.sleep(0.05)`}</pre>
+try:
+    while True:
+        if GPIO.input(PIN) == GPIO.LOW:
+            kb.press(Key.space)
+            kb.release(Key.space)
+            print("Button gedrückt! Animation gestartet.")
+            time.sleep(5.5) # Sperre während 5s Animation
+        time.sleep(0.05)
+finally:
+    GPIO.cleanup()`}</pre>
         </div>
       </div>
     </div>
