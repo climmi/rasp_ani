@@ -6,41 +6,61 @@ const App: React.FC = () => {
   const [isTriggered, setIsTriggered] = useState(false);
   const [lastInput, setLastInput] = useState<string>('Warte...');
   const [animationType, setAnimationType] = useState<'pulse' | 'orbit' | 'waves'>('pulse');
-  const timerRef = useRef<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
   
-  const DURATION = 5000;
+  const DURATION_SECONDS = 5;
+  const timerRef = useRef<number | null>(null);
+  const countdownIntervalRef = useRef<number | null>(null);
+
+  const stopAnimation = useCallback(() => {
+    setIsTriggered(false);
+    setTimeLeft(0);
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
+  }, []);
 
   const triggerAnimation = useCallback(() => {
     if (isTriggered) return;
     
     setIsTriggered(true);
+    setTimeLeft(DURATION_SECONDS);
+    
     const types: ('pulse' | 'orbit' | 'waves')[] = ['pulse', 'orbit', 'waves'];
     setAnimationType(types[Math.floor(Math.random() * types.length)]);
 
+    // Countdown-Intervall (alle 100ms aktualisieren für flüssige Anzeige)
+    const startTime = Date.now();
+    countdownIntervalRef.current = window.setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const remaining = Math.max(0, DURATION_SECONDS - elapsed);
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
+      }
+    }, 100);
+
+    // Haupt-Timer zum Stoppen
     if (timerRef.current) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
-      setIsTriggered(false);
-    }, DURATION);
-  }, [isTriggered]);
+      stopAnimation();
+    }, DURATION_SECONDS * 1000);
+  }, [isTriggered, stopAnimation]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Protokolliere jede Taste für Debug-Zwecke
       setLastInput(`Taste: ${e.key}`);
-      
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         triggerAnimation();
       }
     };
 
-    // Globaler Listener auf dem Dokument
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      if (timerRef.current) window.clearTimeout(timerRef.current);
+      stopAnimation();
     };
-  }, [triggerAnimation]);
+  }, [triggerAnimation, stopAnimation]);
 
   return (
     <div 
@@ -50,10 +70,30 @@ const App: React.FC = () => {
         triggerAnimation();
       }}
     >
-      {/* Debug Overlay (Oben Links) */}
-      <div className="fixed top-2 left-2 z-[100] font-mono text-[10px] text-emerald-500 bg-black/80 p-2 border border-emerald-900/50 rounded pointer-events-none">
-        STATUS: <span className={isTriggered ? "text-blue-400" : "text-white"}>{isTriggered ? "ANIMIERT" : "BEREIT"}</span><br/>
-        INPUT: {lastInput}
+      {/* Debug & Timer Overlay */}
+      <div className="fixed top-4 left-4 z-[100] font-mono text-xs flex flex-col gap-2">
+        <div className="bg-black/80 p-3 border border-emerald-900/50 rounded-lg backdrop-blur-md">
+          <div className="flex items-center gap-2 mb-1">
+            <div className={`w-2 h-2 rounded-full ${isTriggered ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`} />
+            <span className="text-emerald-500 uppercase tracking-widest">Status: {isTriggered ? 'Aktiv' : 'Bereit'}</span>
+          </div>
+          <div className="text-gray-400 text-[10px]">Input: {lastInput}</div>
+          
+          {isTriggered && (
+            <div className="mt-3">
+              <div className="flex justify-between text-[10px] text-blue-400 mb-1 font-bold">
+                <span>ANIMATION LÄUFT...</span>
+                <span>{timeLeft.toFixed(1)}s</span>
+              </div>
+              <div className="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden border border-gray-800">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-100 ease-linear"
+                  style={{ width: `${(timeLeft / DURATION_SECONDS) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Hintergrund-Glow */}
@@ -63,18 +103,25 @@ const App: React.FC = () => {
       <AnimationOverlay isActive={isTriggered} type={animationType} />
 
       {!isTriggered && (
-        <div className="flex flex-col items-center gap-2">
-          <div className="opacity-30 text-[10px] font-mono text-white tracking-[0.5em] uppercase animate-pulse">
-            System Online
+        <div className="flex flex-col items-center gap-4">
+          <div className="opacity-20 text-[10px] font-mono text-white tracking-[1em] uppercase animate-pulse">
+            System Standby
           </div>
-          <div className="w-1 h-1 bg-emerald-500 rounded-full animate-ping" />
+          <div className="relative">
+            <div className="w-12 h-12 border border-emerald-500/20 rounded-full animate-ping absolute inset-0" />
+            <div className="w-12 h-12 border border-emerald-500/40 rounded-full flex items-center justify-center">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Unsichtbarer Hinweis für Fokus */}
-      <div className="fixed bottom-2 text-[8px] text-gray-800">
-        Browser muss im Fokus sein. Einmal klicken falls nötig.
-      </div>
+      {/* Fokus-Warnung nur im Standby */}
+      {!isTriggered && (
+        <div className="fixed bottom-4 text-[9px] text-gray-700 font-mono tracking-tighter">
+          [ WAITING FOR GPIO-TRIGGER OR SPACE ]
+        </div>
+      )}
     </div>
   );
 };
